@@ -19,13 +19,13 @@
                         <form method="post">
                             {% csrf_token %}
                             <div class="mb-3">
-                                <label for="amount" class="form-label">Montant :</label>
-                                <input type="text" name="amount" id="amount" class="form-control" required>
+                                <label for="montant" class="form-label">Montant :</label>
+                                <input type="text" name="montant" id="montant" class="form-control" required>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="payment_method" class="form-label">Méthode de paiement :</label>
-                                <select name="payment_method" id="payment_method" class="form-select" required>
+                                <label for="mode_paiement" class="form-label">Méthode de paiement :</label>
+                                <select name="mode_paiement" id="mode_paiement" class="form-select" required>
                                     <option value="tmoney">TMoney</option>
                                     <option value="flooz">Flooz</option>
                                 </select>

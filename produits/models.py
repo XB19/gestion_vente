@@ -1,6 +1,9 @@
-from django.db import models
+from django.db import models  
 
-# Create your models here.
+class Utilisateur(models.Model):  
+    nom = models.CharField(max_length=100)  
+    role = models.CharField(max_length=50)    
+
 class Categorie(models.Model):
     nom = models.CharField(max_length=100)
 
@@ -8,34 +11,43 @@ class Categorie(models.Model):
         return self.nom
 
 class Produit(models.Model):
-    nom = models.CharField(max_length=200)
+    nom = models.CharField(max_length=100)
     categorie = models.ForeignKey(Categorie, on_delete=models.CASCADE)
     prix = models.DecimalField(max_digits=10, decimal_places=2)
-    stock = models.IntegerField(default=0)
-    date_ajout = models.DateTimeField(auto_now_add=True)
+    stock = models.IntegerField()  
 
     def __str__(self):
         return self.nom
 
-class Vente(models.Model):
-    produit = models.ForeignKey(Produit, on_delete=models.CASCADE)
-    quantite = models.PositiveIntegerField()
-    date_vente = models.DateTimeField(auto_now_add=True)
+    def __str__(self):  
+        return self.nom  
 
-    def total(self):
-        return self.produit.prix * self.quantite
-from django.db import models
+class Client(models.Model):  
+    nom = models.CharField(max_length=100)  
+    prenom = models.CharField(max_length=100)  
+    numero = models.IntegerField()  
 
-class Payment(models.Model):
-    PAYMENT_CHOICES = (
-        ('tmoney', 'Tmoney'),
-        ('flooz', 'Flooz'),
-    )
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
-    transaction_id = models.CharField(max_length=100, blank=True, null=True)
-    status = models.CharField(max_length=20, default='pending')
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Payment #{self.id} - {self.payment_method} - {self.status}"
+    def __str__(self):  
+        return f"{self.prenom} {self.nom}"  
+
+class Vente(models.Model):  
+    produit = models.ForeignKey(Produit, on_delete=models.CASCADE)  
+    quantite = models.PositiveIntegerField()  
+    date_vente = models.DateTimeField(auto_now_add=True)  
+
+
+    def __str__(self):  
+        return f"Vente de {self.produit.nom} - Quantité: {self.quantite}"  
+
+class Payment(models.Model):  
+    PAYMENT_CHOICES = (  
+        ('tmoney', 'Tmoney'),  
+        ('flooz', 'Flooz'),  
+    )  
+    montant = models.DecimalField(max_digits=10, decimal_places=2)  
+    mode_paiement = models.CharField(max_length=20, choices=PAYMENT_CHOICES)  
+    date_paiement = models.DateTimeField(auto_now_add=True)  
+
+    def __str__(self):  
+        return f"Payment #{self.id} - {self.mode_paiement} - Montant: {self.montant}"  

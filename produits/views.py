@@ -1,26 +1,13 @@
-from django.shortcuts import render
-from .models import Produit
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Produit
-from .forms import ProduitForm
-from .models import Vente
-from .forms import VenteForm
+from .models import Produit, Categorie, Vente, Payment
+from .forms import ProduitForm, VenteForm
 from django.db.models import Sum
-from django.shortcuts import render
-from .models import Produit, Vente
+from django.contrib import messages
 import requests
-from django.shortcuts import render, redirect
 from django.conf import settings
-from .models import Payment
-from .models import Produit, Categorie
 from django.http import JsonResponse
-from django.contrib import messages
 
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Produit
-
+# Ajouter au panier
 def ajouter_au_panier(request, produit_id):
     produit = get_object_or_404(Produit, id=produit_id)
 
@@ -29,58 +16,82 @@ def ajouter_au_panier(request, produit_id):
 
     panier = request.session['panier']
 
+    # Vérifier la quantité du produit
+    if produit.stock <= 0:
+        messages.error(request, f"Le produit {produit.nom} est en rupture de stock.")
+        return redirect('liste_produits')
+
     if str(produit_id) in panier:
-        panier[str(produit_id)]['quantite'] += 1
+        if panier[str(produit_id)]['quantite'] < produit.stock:
+            panier[str(produit_id)]['quantite'] += 1
+        else:
+            messages.error(request, f"Le stock de {produit.nom} est insuffisant pour ajouter au panier.")
+            return redirect('liste_produits')
     else:
         panier[str(produit_id)] = {
             'nom': produit.nom,
-            'prix': float(produit.prix),  
+            'prix': float(produit.prix),
             'quantite': 1
         }
 
     request.session['panier'] = panier  
     messages.success(request, f"{produit.nom} ajouté au panier !")
-
     return redirect('payment')
 
 
 
+# Base view
 def base(request):
     return render(request, 'base.html') 
 
+
+# Liste des produits
 def liste_produits(request):
     produits = Produit.objects.all()
     return render(request, 'liste.html', {'produits': produits})
 
+
+# Ajouter un produit
 def ajouter_produit(request):
-    categories = Categorie.objects.all()  
+    categories = Categorie.objects.all()
 
     if request.method == "POST":
+        # Affichez le contenu du POST pour vérifier ce qui est envoyé
+        print(request.POST)
+
         nom = request.POST.get("nom")
         categorie_id = request.POST.get("categorie_id")
         prix = request.POST.get("prix")
-        stock = request.POST.get("stock")
+        quantite = request.POST.get("stock")  # Correction ici : utiliser 'stock' pour cohérence
 
-        if not (nom and categorie_id and prix and stock):
+        # Vérification des champs
+        if not (nom and categorie_id and prix and quantite):  # Maintenant, quantite est bien définie
             messages.error(request, "Tous les champs sont requis.")
             return redirect("ajouter_produit")
 
         try:
+            # Validation des données
+            prix = float(prix)
+            quantite = int(quantite)  # Correction ici : quantite doit être défini avant conversion
+
             categorie = Categorie.objects.get(id=categorie_id)
             produit = Produit.objects.create(
                 nom=nom,
                 categorie=categorie,
-                prix=float(prix),
-                stock=int(stock)
+                prix=prix,
+                stock=quantite  # Correction ici : l'attribut 'stock' est utilisé au lieu de 'quantite'
             )
             messages.success(request, f"Produit '{produit.nom}' ajouté avec succès !")
             return redirect("ajouter_produit")
         except Categorie.DoesNotExist:
             messages.error(request, "Catégorie invalide.")
         except ValueError:
-            messages.error(request, "Veuillez entrer des valeurs valides pour le prix et le stock.")
+            messages.error(request, "Veuillez entrer des valeurs valides pour le prix et la quantité.")
 
     return render(request, "ajouter_produit.html", {"categories": categories})
+
+
+
 
 # Modifier un produit
 def modifier_produit(request, produit_id):
@@ -94,29 +105,59 @@ def modifier_produit(request, produit_id):
         form = ProduitForm(instance=produit)
     return render(request, 'formulaire_produit.html', {'form': form})
 
+
 # Supprimer un produit
 def supprimer_produit(request, produit_id):
     produit = get_object_or_404(Produit, id=produit_id)
     produit.delete()
     return redirect('liste_produits')
 
+
+# Enregistrer une vente
 def enregistrer_vente(request):
     if request.method == "POST":
-        form = VenteForm(request.POST)
-        if form.is_valid():
-            vente = form.save()
-            produit = vente.produit
-            produit.stock -= vente.quantite
-            produit.save()
+        # Vérifiez si les clés 'produit_id' et 'vente_id' existent dans request.POST
+        produit_id = request.POST.get('produit_id')
+        vente_id = request.POST.get('vente_id')
+
+        if not produit_id or not vente_id:
+            messages.error(request, "Le produit ou la vente n'a pas été spécifié.")
             return redirect('liste_produits')
-    else:
-        form = VenteForm()
-    return render(request, 'formulaire_vente.html', {'form': form})
+
+        try:
+            # Récupérer le produit et la vente
+            produit = Produit.objects.get(id=produit_id)
+            vente = Vente.objects.get(id=vente_id)
+
+            # Mise à jour du stock du produit
+            if vente.quantite > produit.stock:
+                messages.error(request, "Stock insuffisant pour cette vente.")
+                return redirect('liste_ventes')
+
+            produit.stock -= vente.quantite  # Décrémenter le stock
+            produit.save()
+
+            # Enregistrer la vente ou toute autre opération nécessaire
+            messages.success(request, f"Vente de {vente.quantite} {produit.nom} effectuée avec succès !")
+
+            # Redirection vers une autre page (par exemple, la liste des ventes)
+            return redirect('liste_ventes')
+        
+        except Produit.DoesNotExist:
+            messages.error(request, "Produit non trouvé.")
+        except Vente.DoesNotExist:
+            messages.error(request, "Vente non trouvée.")
+        except Exception as e:
+            messages.error(request, f"Une erreur est survenue : {e}")
+    
+    return redirect('liste_produits')  # Rediriger si pas de méthode POST
 
 
+
+# Tableau de bord
 def tableau_de_bord(request):
     total_produits = Produit.objects.count()
-    total_stock = Produit.objects.aggregate(Sum('stock'))['stock__sum'] or 0
+    total_stock = Produit.objects.aggregate(Sum('stock'))['stock__sum'] or 0  # Utiliser "stock" au lieu de "quantite"
     total_ventes = Vente.objects.aggregate(Sum('quantite'))['quantite__sum'] or 0
     revenus_total = Vente.objects.aggregate(Sum('produit__prix'))['produit__prix__sum'] or 0
 
@@ -136,43 +177,27 @@ def tableau_de_bord(request):
     return render(request, 'tableau_de_bord.html', context)
 
 
-
+# Payment view
 def payment_view(request):
-    panier = request.session.get('panier', {})  # Récupérer le panier depuis la session
-
-    total_amount = sum(item['prix'] * item['quantite'] for item in panier.values())
-
     if request.method == 'POST':
-        amount = request.POST.get('amount', total_amount)  # Utiliser le montant total du panier
-        payment_method = request.POST.get('payment_method')
+        montant = request.POST.get('montant')
+        mode_paiement = request.POST.get('mode_paiement')
 
-        payment = Payment.objects.create(
-            amount=amount,
-            payment_method=payment_method
-        )
-
-        if payment_method == 'tmoney':
-            response = process_tmonet_payment(payment)
-        elif payment_method == 'flooz':
-            response = process_flooz_payment(payment)
+        # Assurez-vous que les données sont valides
+        if montant and mode_paiement:
+            payment = Payment.objects.create(
+                montant=montant,
+                mode_paiement=mode_paiement
+            )
+            return render(request, 'payment_success.html', {'payment': payment})
         else:
-            response = {'success': False}
-
-        if response.get('success'):
-            payment.transaction_id = response.get('transaction_id')
-            payment.status = 'completed'
-            payment.save()
-            return redirect('payment_success')
-        else:
-            payment.status = 'failed'
-            payment.save()
-            return redirect('payment_error')
-
-    return render(request, 'payment_form.html', {'panier': panier, 'total_amount': total_amount})
+            return render(request, 'payment_form.html', {'error': 'Données invalides.'})
+    return render(request, 'payment_form.html')
 
 
+# Tmoney payment processing
 def process_tmonet_payment(payment):
-    url = settings.TMONET_API_URL  
+    url = settings.TMONET_API_URL
     data = {
         'amount': str(payment.amount),
         'order_id': payment.id,
@@ -192,8 +217,10 @@ def process_tmonet_payment(payment):
         print(f"Erreur Tmonet : {e}")
         return {'success': False}
 
+
+# Flooz payment processing
 def process_flooz_payment(payment):
-    url = settings.FLOOZ_API_URL  
+    url = settings.FLOOZ_API_URL
     data = {
         'amount': str(payment.amount),
         'order_id': payment.id,
@@ -212,4 +239,3 @@ def process_flooz_payment(payment):
     except Exception as e:
         print(f"Erreur Flooz : {e}")
         return {'success': False}
-

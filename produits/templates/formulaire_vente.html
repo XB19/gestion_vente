@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="card shadow-sm">
@@ -6,6 +7,16 @@
             <h2 class="mb-0">Enregistrer une Vente</h2>
         </div>
         <div class="card-body">
+            <!-- Affichage des messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'success' %}success{% else %}danger{% endif %}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Formulaire -->
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
