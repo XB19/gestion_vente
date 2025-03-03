@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container">
+        <h2>Liste des Produits</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Catégorie</th>
+                    <th>Prix</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produit in produits %}
+                    <tr>
+                        <td>{{ produit.nom }}</td>
+                        <td>{{ produit.categorie.nom }}</td>
+                        <td>{{ produit.prix }} FCFA</td>
+                        <td>{{ produit.stock }}</td>
+                        <td>
+                            <a href="{% url 'modifier_produit' produit.id %}" class="btn btn-warning">Modifier</a>
+                            <a href="{% url 'supprimer_produit' produit.id %}" class="btn btn-danger" onclick="return confirm('Voulez-vous vraiment supprimer ce produit ?');">Supprimer</a>
+                            <form method="POST" action="{% url 'ajouter_au_panier' produit.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">Ajouter au panier</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

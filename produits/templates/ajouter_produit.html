@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center">Ajouter un Produit</h2>
+
+        <!-- Affichage des messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'success' %}success{% else %}danger{% endif %}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Formulaire -->
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="nom" class="form-label">Nom du produit :</label>
+                <input type="text" class="form-control" name="nom" placeholder="Nom du produit" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="categorie_id" class="form-label">Catégorie :</label>
+                <select class="form-select" name="categorie_id" required>
+                    <option value="">Sélectionnez une catégorie</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="prix" class="form-label">Prix :</label>
+                <input type="number" step="0.01" class="form-control" name="prix" placeholder="Prix" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="stock" class="form-label">Stock :</label>
+                <input type="number" class="form-control" name="stock" placeholder="Stock" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Ajouter</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

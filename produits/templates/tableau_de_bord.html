@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Tableau de Bord</h2>
+
+    <div class="row">
+        <!-- Carte des Produits -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-primary">Produits</h5>
+                    <h3 class="font-weight-bold">{{ total_produits }}</h3>
+                    <p class="text-muted">Produits enregistrés</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carte du Stock Total -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success">Stock Total</h5>
+                    <h3 class="font-weight-bold">{{ total_stock }}</h3>
+                    <p class="text-muted">Unités en stock</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carte des Ventes Totales -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-warning">Ventes</h5>
+                    <h3 class="font-weight-bold">{{ total_ventes }}</h3>
+                    <p class="text-muted">Produits vendus</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carte des Revenus -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-danger">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-danger">Revenus</h5>
+                    <h3 class="font-weight-bold">{{ revenus_total }} CFA</h3>
+                    <p class="text-muted">Total des ventes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section avec Graphique -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Évolution des Ventes</h5>
+                    <canvas id="chartVentes"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Intégration de Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('chartVentes').getContext('2d');
+    var chartVentes = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ labels|safe }},
+            datasets: [{
+                label: 'Ventes',
+                data: {{ data|safe }},
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+</script>
+{% endblock %}

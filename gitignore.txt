@@ -1,0 +1,23 @@
+# Ignore les fichiers de configuration sensibles
+.env
+
+# Ignore la base de données SQLite (si utilisée)
+*.sqlite3
+db.sqlite3
+
+# Ignore les fichiers compilés Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore les fichiers de migration
+*/migrations/*.py
+*/migrations/__pycache__/
+
+# Ignore les fichiers statiques et médias
+static/
+media/
+
+# Ignore les fichiers des environnements virtuels
+venv/
+env/
