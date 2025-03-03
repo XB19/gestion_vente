@@ -6,6 +6,15 @@ from django.contrib import messages
 import requests
 from django.conf import settings
 from django.http import JsonResponse
+from .forms import VenteForm, PaymentForm
+
+
+
+def payment_success_view(request):
+    return render(request, 'payment_success.html')
+
+def payment_error_view(request):
+    return render(request, 'payment_error.html')
 
 # Ajouter au panier
 def ajouter_au_panier(request, produit_id):
@@ -114,46 +123,77 @@ def supprimer_produit(request, produit_id):
 
 
 # Enregistrer une vente
-def enregistrer_vente(request):
-    if request.method == "POST":
-        # Vérifiez si les clés 'produit_id' et 'vente_id' existent dans request.POST
-        produit_id = request.POST.get('produit_id')
-        vente_id = request.POST.get('vente_id')
+def nouvelle_vente(request):
+    if request.method == 'POST':
+        vente_form = VenteForm(request.POST)
+        payment_form = PaymentForm(request.POST)
 
-        if not produit_id or not vente_id:
-            messages.error(request, "Le produit ou la vente n'a pas été spécifié.")
-            return redirect('liste_produits')
+        if vente_form.is_valid() and payment_form.is_valid():
+            vente = vente_form.save(commit=False)
+            produit = vente.produit
 
-        try:
-            # Récupérer le produit et la vente
-            produit = Produit.objects.get(id=produit_id)
-            vente = Vente.objects.get(id=vente_id)
-
-            # Mise à jour du stock du produit
+            # Vérifier la disponibilité en stock avant de sauver la vente
             if vente.quantite > produit.stock:
-                messages.error(request, "Stock insuffisant pour cette vente.")
-                return redirect('liste_ventes')
+                vente_form.add_error('quantite', f"Il n'y a pas assez de stock pour {produit.nom}. Stock disponible : {produit.stock}")
+                return render(request, 'nouvelle_vente.html', {'vente_form': vente_form, 'payment_form': payment_form, 'produits': Produit.objects.all()})
 
-            produit.stock -= vente.quantite  # Décrémenter le stock
+            # Enregistrer la vente
+            vente.save()
+
+            # Mettre à jour le stock du produit
+            produit.stock -= vente.quantite
             produit.save()
 
-            # Enregistrer la vente ou toute autre opération nécessaire
-            messages.success(request, f"Vente de {vente.quantite} {produit.nom} effectuée avec succès !")
+            # Calculer le montant total
+            total = produit.prix * vente.quantite
 
-            # Redirection vers une autre page (par exemple, la liste des ventes)
-            return redirect('liste_ventes')
-        
-        except Produit.DoesNotExist:
-            messages.error(request, "Produit non trouvé.")
-        except Vente.DoesNotExist:
-            messages.error(request, "Vente non trouvée.")
-        except Exception as e:
-            messages.error(request, f"Une erreur est survenue : {e}")
+            # Enregistrer le paiement
+            payment = payment_form.save(commit=False)
+            payment.montant = total
+            payment.save()
+
+            return redirect('vente_success')  # Remplacez 'vente_success' par la page de confirmation
+            
+    else:
+        vente_form = VenteForm()
+        payment_form = PaymentForm()
+
+    return render(request, 'nouvelle_vente.html', {
+        'vente_form': vente_form,
+        'payment_form': payment_form,
+        'produits': Produit.objects.all(),
+    })
+
+
+def enregistrer_vente(request):
+    # Récupérer la liste des produits disponibles
+    produits = Produit.objects.all()
+
+    if request.method == 'POST':
+        # Traitement du formulaire
+        produit_id = request.POST.get('produit')
+        quantite = request.POST.get('quantite')
+        mode_paiement = request.POST.get('mode_paiement')
+
+        produit = Produit.objects.get(id=produit_id)
+
+        # Créer une nouvelle vente
+        vente = Vente.objects.create(
+            produit=produit,
+            quantite=quantite,
+        )
+
+        # Créer le paiement associé à la vente
+        montant_total = float(produit.prix) * int(quantite)
+        Payment.objects.create(
+            montant=montant_total,
+            mode_paiement=mode_paiement,
+        )
+
+        return redirect('payment_success')  # Rediriger vers une page de succès ou autre
     
-    return redirect('liste_produits')  # Rediriger si pas de méthode POST
 
-
-
+    return render(request, 'enregistrer_vente.html', {'produits': produits})
 # Tableau de bord
 def tableau_de_bord(request):
     total_produits = Produit.objects.count()

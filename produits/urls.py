@@ -2,7 +2,8 @@ from django.urls import path
 from django.shortcuts import render
 from .views import (
     liste_produits, ajouter_produit, modifier_produit, supprimer_produit,
-    enregistrer_vente, tableau_de_bord, payment_view, ajouter_au_panier  # Ajoute ajouter_au_panier ici
+    enregistrer_vente, tableau_de_bord, payment_view, ajouter_au_panier, 
+    payment_success_view, payment_error_view  # Importer les vues pour success et error
 )
 
 urlpatterns = [
@@ -15,6 +16,6 @@ urlpatterns = [
     path('vente/', enregistrer_vente, name='enregistrer_vente'),
     path('dashboard/', tableau_de_bord, name='tableau_de_bord'),
     path('payment/', payment_view, name='payment'),
-    path('payment/success/', lambda request: render(request, 'payment_success.html'), name='payment_success'),
-    path('payment/error/', lambda request: render(request, 'payment_error.html'), name='payment_error'),
+    path('payment/success/', payment_success_view, name='payment_success'),  # Vue dédiée pour success
+    path('payment/error/', payment_error_view, name='payment_error'),  # Vue dédiée pour error
 ]

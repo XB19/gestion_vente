@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center">Nouvelle Vente</h2>
+
+        <!-- Affichage des messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'success' %}success{% else %}danger{% endif %}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Formulaire -->
+        <form method="POST">
+            {% csrf_token %}
+            
+            <!-- Détails de la Vente -->
+            <div class="mb-3">
+                <h4>Détails de la Vente</h4>
+            </div>
+
+            <div class="mb-3">
+                <label for="produit" class="form-label">Produit</label>
+                <select name="produit" id="produit" class="form-select" required>
+                    {% for produit in produits %}
+                        <option value="{{ produit.id }}">{{ produit.nom }} - {{ produit.prix }} CFA</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="quantite" class="form-label">Quantité</label>
+                <input type="number" name="quantite" id="quantite" class="form-control" min="1" max="1000" placeholder="Entrez la quantité" required>
+            </div>
+
+            <!-- Détails du Paiement -->
+            <div class="mb-3">
+                <h4>Détails du Paiement</h4>
+            </div>
+
+            <div class="mb-3">
+                <label for="mode_paiement" class="form-label">Mode de Paiement</label>
+                <select name="mode_paiement" class="form-select" required>
+                    <option value="tmoney">Tmoney</option>
+                    <option value="flooz">Flooz</option>
+                </select>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Enregistrer Vente</button>
+            </div>
+        </form>
+
+        {% if vente_form.errors %}
+            <div class="alert alert-danger mt-4">
+                <ul>
+                    {% for error in vente_form.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
